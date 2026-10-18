@@ -1,0 +1,189 @@
+---
+doc_type: model_api
+model_code: wan3.0-video
+channel_code: dashscope_compatible
+type_code: video
+sync_target: ai_developer_doc
+sync_status: pending_review
+---
+
+# Wan 3.0 Video
+
+视频生成模型，支持文生视频、首帧/首尾帧生成和多媒体参考生成。完成后返回临时视频链接，平台不转存。
+
+<details>
+<summary>基本信息</summary>
+
+| 字段 | 内容 |
+| --- | --- |
+| 类型 | 模型 API |
+| 模型名称 | Wan 3.0 Video |
+| 模型编码 | `wan3.0-video` |
+| 模型类型 | 视频生成（video） |
+| 调用方式 | `POST /api/v1/tasks` |
+| 调用模式 | 异步 |
+| 计费方式 | 请以价格查询接口为准 |
+| 最大参考图片数 | 10 |
+| 最大参考视频数 | 5 |
+| 最大参考音频数 | 5 |
+
+</details>
+
+## 鉴权
+
+所有调用必须在请求头携带平台分配的 API Key：
+
+```http
+Authorization: Bearer <YOUR_API_KEY>
+Content-Type: application/json
+```
+
+## 请求路径
+
+```http
+POST /api/v1/tasks
+```
+
+该模型为异步任务。提交后返回平台 `task_id`，通过 `GET /api/v1/tasks/{task_id}` 查询结果；也可传入 `callback_url` 接收平台终态回调。
+
+## 业务参数
+
+`input.prompt` 与 `input.media` 至少提供一项；提示词最多 20,000 个字符。
+
+| 参数 | 类型 | 必填 | 默认值 | 可选值 / 范围 | 示例 | 说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `model` | string | 是 | — | `wan3.0-video` | — | 模型编码。 |
+| `channel` | string | 否 | — | `dashscope_compatible` | — | 指定渠道；不传时按当前租户可用路由选择。 |
+| `input.prompt` | string | 条件必填 | — | 最多 20,000 字符 | `一艘木船驶过晨雾湖面` | 视频描述；可用“图1”“视频1”“音频1”引用参考素材。 |
+| `input.media` | array | 条件必填 | — | 见媒体参数表 | — | 参考素材数组。 |
+| `parameters.resolution` | string | 否 | `1080P` | `480P` / `720P` / `1080P` | `720P` | 输出分辨率。 |
+| `parameters.ratio` | string | 否 | `adaptive` | `adaptive` / `16:9` / `4:3` / `1:1` / `3:4` / `9:16` | `16:9` | 输出画幅比例。 |
+| `parameters.duration` | integer | 是 | — | `-1` 或整数秒数 | `5` | 输出时长。无参考视频时为 2 至 30；参考视频模式时按总时长限制校验。`-1` 表示智能时长。 |
+| `parameters.audio` | boolean | 否 | `true` | `true` / `false` | `true` | 是否包含音频。 |
+| `parameters.seed` | integer | 否 | — | `0` 至 `2147483647` | `12345` | 随机种子。 |
+| `parameters.watermark` | boolean | 否 | `false` | `true` / `false` | `false` | 是否添加水印。 |
+| `callback_url` | string | 否 | — | HTTPS URL | `https://example.com/hook` | 任务进入终态时的平台回调地址。 |
+
+### 媒体参数
+
+`input.media` 的每项均包含 `type` 和 `url`。媒体 URL 在任务执行期间必须可访问。
+
+| `type` | 最大数量 | 说明 |
+| --- | ---: | --- |
+| `first_frame` | 1 | 首帧图像。 |
+| `last_frame` | 1 | 尾帧图像。 |
+| `reference_image` | 10 | 参考图像。 |
+| `reference_video` | 5 | 参考视频；单段 1 至 15 秒，合计不超过 15 秒。 |
+| `reference_audio` | 5 | 参考音频；单段 1 至 15 秒，合计不超过 15 秒。 |
+| `file` | 1 | 参考文件，不能与 `link` 同时使用。 |
+| `link` | 1 | 网页链接，不能与 `file` 同时使用。 |
+
+首帧/尾帧模式不能与参考图片、参考视频、参考音频、文件或网页链接混用；`file` 与 `link` 不能同时使用。图片支持 HTTP/HTTPS、OSS 临时 URL 或 `data:image/...;base64,...`，格式为 JPEG、JPG、PNG（无透明通道）、BMP、WEBP。
+
+## 请求示例
+
+### 文生视频
+
+```json
+{
+  "model": "wan3.0-video",
+  "input": {
+    "prompt": "一艘木船驶过晨雾湖面，镜头缓慢推进，电影质感。"
+  },
+  "parameters": {
+    "resolution": "720P",
+    "ratio": "16:9",
+    "duration": 5,
+    "audio": true,
+    "watermark": false
+  }
+}
+```
+
+### 多媒体参考生成
+
+```json
+{
+  "model": "wan3.0-video",
+  "input": {
+    "prompt": "让图1中的角色按照视频1的节奏自然行走，并使用音频1作为对白参考。",
+    "media": [
+      {"type": "reference_image", "url": "https://example.com/character.png"},
+      {"type": "reference_video", "url": "https://example.com/motion.mp4"},
+      {"type": "reference_audio", "url": "https://example.com/voice.mp3"}
+    ]
+  },
+  "parameters": {
+    "resolution": "480P",
+    "ratio": "9:16",
+    "duration": 5
+  },
+  "callback_url": "https://example.com/hook"
+}
+```
+
+## 成功响应
+
+```json
+{
+  "code": 1,
+  "msg": "success",
+  "data": {
+    "task_id": "task_xxxxxxxxxxxx",
+    "status": "pending",
+    "model": "wan3.0-video",
+    "created_at": "2026-08-12T12:00:00Z"
+  }
+}
+```
+
+### 查询任务结果
+
+```http
+GET /api/v1/tasks/{task_id}
+```
+
+```json
+{
+  "code": 1,
+  "msg": "success",
+  "data": {
+    "task_id": "task_xxxxxxxxxxxx",
+    "status": "completed",
+    "result": {
+      "video_url": "https://example.com/result.mp4",
+      "usage": {
+        "output_video_duration": 5,
+        "SR": 720,
+        "ratio": "16:9"
+      }
+    },
+    "completed_at": "2026-08-12T12:05:00Z"
+  }
+}
+```
+
+`result.video_url` 是临时视频下载链接，有效期约 24 小时。平台不转存，也不提供永久保存，请及时下载或保存。
+
+## 失败响应
+
+```json
+{
+  "code": 0,
+  "msg": "请求参数不合法",
+  "data": null
+}
+```
+
+### 错误说明
+
+| 场景 | 说明 |
+| --- | --- |
+| 参数校验失败 | 缺少提示词和媒体、媒体类型或数量不支持、首尾帧与参考模式混用，或分辨率、比例、时长、种子不在支持范围内。 |
+| 媒体访问失败 | 参考素材 URL 不可访问或格式不符合要求。 |
+| 任务失败 | 查询结果 `status=failed`，`msg` 返回安全的失败说明。 |
+| 权限或余额不足 | 请检查 API Key 权限、当前模型上架状态和账户余额。 |
+
+## 价格查询
+
+调用前请通过 `GET /api/v1/pricing?type=model&model=wan3.0-video` 查询有效价格。实际扣费以任务创建时的价格快照为准。

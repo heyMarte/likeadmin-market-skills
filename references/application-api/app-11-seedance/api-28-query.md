@@ -1,0 +1,98 @@
+---
+doc_type: application_api
+app_id: 11
+app_code: seedance
+ai_app_api_id: 28
+api_code: query
+sync_target: ai_developer_doc
+sync_status: pending_review
+existing_doc_id: 37
+existing_parent_id: 61
+existing_slug: seedance-query
+existing_title: "Seedance 2.0 · 查询任务"
+---
+
+# Seedance 2.0 · 查询任务
+
+按任务 ID 查询 Seedance 任务执行状态
+
+<details>
+<summary>基本信息</summary>
+
+| 字段 | 内容 |
+| --- | --- |
+| 类型 | 应用 API |
+| 应用名称 | Seedance 2.0 |
+| 应用编码 | `seedance` |
+| API 名称 | 查询任务 |
+| API 编码 | `query` |
+| 请求方式 | `GET` |
+| 请求路径 | `/api/v1/apps/seedance/query` |
+| 调用模式 | 同步 |
+| 计费方式 | 按次（0.0000 元 / 次） |
+
+</details>
+
+## 鉴权
+
+```http
+Authorization: Bearer <YOUR_API_KEY>
+Content-Type: application/json
+```
+
+## 请求路径
+
+```http
+GET /api/v1/apps/seedance/query
+```
+
+## 业务参数
+
+| 参数 | 类型 | 必填 | 默认值 | 可选值 / 范围 | 示例 | 说明 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `task_id` | string | 是 | — | — | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` | 平台任务 ID（与创建接口响应中的 `task_id` 一致）。也可使用查询参数 id。 |
+
+## 请求示例
+
+```json
+{
+    "task_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
+## 成功响应
+
+```json
+{
+    "code": 1,
+    "msg": "success",
+    "data": {
+        "_comment": "具体字段以接口实际返回为准"
+    }
+}
+```
+
+## 失败响应
+
+```json
+{
+    "error": {
+        "message": "点数余额不足",
+        "type": "insufficient_points",
+        "code": "insufficient_points"
+    }
+}
+```
+
+### 错误码
+
+| HTTP | code | 含义 |
+| --- | --- | --- |
+| 400 | `invalid_request` | 参数缺失或格式错误 |
+| 401 | `auth_failed` | API Key 缺失或无效 |
+| 402 | `insufficient_points` | 点数余额不足 |
+| 402 | `key_quota_exceeded` | 当前 API Key 点数额度不足 |
+| 403 | `permission_denied` | 当前 API Key 无权调用该模型/应用 |
+| 404 | `not_found` | 模型 / 应用 / 任务不存在 |
+| 429 | `queue_limit_exceeded` | 排队任务已达上限 |
+| 5xx | `server_error` | 服务异常，请稍后重试 |
