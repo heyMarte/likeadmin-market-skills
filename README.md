@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-npx skills add marte95/likeadmin-market-skills
+npx skills add heyMarte/likeadmin-market-skills
 ```
 
 OpenClaw users can install the same skill with:
